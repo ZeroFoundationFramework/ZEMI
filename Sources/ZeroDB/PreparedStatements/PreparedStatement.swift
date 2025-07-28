@@ -7,7 +7,7 @@
 
 
 /// Hält den Zustand eines vom Server vorbereiteten SQL-Statements.
-private struct PreparedStatement {
+struct PreparedStatement {
     let statementId: UInt32
     let columnCount: UInt16
     let paramCount: UInt16

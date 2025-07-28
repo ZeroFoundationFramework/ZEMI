@@ -7,12 +7,11 @@
 
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
-
 import XCTest
-@testable import ZeroMacros
+import ZeroMacros
 
-let testMacros = [String: Macro.Type] = [
-    "generateQueryFunctions" : GenerateQueryFunctionsMacro.self
+nonisolated(unsafe) let testMacros : [String: Macro.Type] = [
+    "GenerateQueryFunctions" : GenerateQueryFunctionsMacro.self,
 ]
 
 final class ZeroMacrosTest: XCTestCase {
@@ -20,7 +19,6 @@ final class ZeroMacrosTest: XCTestCase {
     func testGeneration() {
         assertMacroExpansion("""
             import Foundation
-            import ZeroDB
             import ZeroMacrosClient
 
             @GenerateQueryFunctions
@@ -31,17 +29,14 @@ final class ZeroMacrosTest: XCTestCase {
                 @Text(name: "name", maxSize: 4) var name: String
                 
                 @Text(name: "email", nullable: true, maxSize: 20) var email: String
-                
-                public func toString() -> String {
-                    "User(id: \(id), name: \(name))"
+            
+                public func test(name: String) -> String {
+                    return "Hallo"
                 }
             } 
             """, expandedSource: """
                 import Foundation
-                import ZeroDB
                 import ZeroMacrosClient
-
-                
                 public class User: NSObject, Model {
                     
                     @ID var id: UUID
@@ -49,22 +44,17 @@ final class ZeroMacrosTest: XCTestCase {
                     @Text(name: "name", maxSize: 4) var name: String
                     
                     @Text(name: "email", nullable: true, maxSize: 20) var email: String
-                    
-                    public func toString() -> String {
-                        "User(id: \(id), name: \(name))"
-                    }
-                    
-                    public static func findById(_ t: UUID) -> User? {
+
+                    public static func findById( _ t : UUID ) -> User? {
                         return nil
                     }
-                    public static func findByName(_ t: String) -> User? {
-                        return nil
+                    public static func findByName( _ t : String ) -> User? { 
+                        return nil 
+                    } 
+                    public static func findByEmail( _ t : String ) -> User? { 
+                        return nil 
                     }
-                    public static func findByEmail(_ t: String) -> User? {
-                        return nil
-                    }
-                
-                }
+                } 
                 """, macros: testMacros)
     }
     

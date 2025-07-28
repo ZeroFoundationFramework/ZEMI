@@ -8,8 +8,12 @@
 
 import Foundation
 
-struct DBClientCapability: OptionSet {
-    let rawValue: UInt32
+public struct DBClientCapability: OptionSet, Sendable {
+    public let rawValue: UInt32
+    
+    public init(rawValue: UInt32) {
+        self.rawValue = rawValue
+    }
     
     /*
      16384 - client_reserved
@@ -36,11 +40,11 @@ struct DBClientCapability: OptionSet {
             .client_ignore_sigpipe,
             .client_transactions,
             .client_reserved,
-            .client_reserved2,
+            .client_secure_connection,
             .client_multi_statements,
             .client_multi_results,
             .client_ps_multi_results,
-            .cliet_plugin_auth,
+            .client_plugin_auth,
             .client_connect_attrs,
             .client_plugin_auth_lenenc_client_data,
             .client_can_handle_expired_passwords,
@@ -82,13 +86,13 @@ struct DBClientCapability: OptionSet {
     static let client_ignore_sigpipe = DBClientCapability(rawValue: 4096)    // 4096
     static let client_transactions = DBClientCapability(rawValue: 8192)    // 8192
     static let client_reserved = DBClientCapability(rawValue: 16384)   // 16384
-    static let client_reserved2 = DBClientCapability(rawValue: 32768)   // 32768
+    static let client_secure_connection = DBClientCapability(rawValue: 32768)   // 32768
 
     // MARK: - Bit-Shifts von 16 bis 31
     static let client_multi_statements = DBClientCapability(rawValue: 1 << 16) // 65,536
     static let client_multi_results = DBClientCapability(rawValue: 1 << 17) // 131,072
     static let client_ps_multi_results = DBClientCapability(rawValue: 1 << 18) // 262,144
-    static let cliet_plugin_auth = DBClientCapability(rawValue: 1 << 19) // 524,288
+    static let client_plugin_auth = DBClientCapability(rawValue: 1 << 19) // 524,288
     static let client_connect_attrs = DBClientCapability(rawValue: 1 << 20) // 1,048,576
     static let client_plugin_auth_lenenc_client_data = DBClientCapability(rawValue: 1 << 21) // 2,097,152
     static let client_can_handle_expired_passwords = DBClientCapability(rawValue: 1 << 22) // 4,194,304
@@ -120,13 +124,13 @@ struct DBClientCapability: OptionSet {
            case .client_ignore_sigpipe: return "CLIENT_IGNORE_SIGPIPE: Löst bei Verbindungsfehlern kein SIGPIPE aus."
            case .client_transactions: return "CLIENT_TRANSACTIONS: Der Client versteht Transaktionen."
            case .client_reserved: return "CLIENT_RESERVED: Veraltetes Flag für die 4.1-Authentifizierung."
-           case .client_reserved2: return "CLIENT_RESERVED2: Veraltetes Flag für die 4.1-Authentifizierung."
+           case .client_secure_connection: return "SECURE_CONNECTION"
 
            // MARK: - Higher Bits
            case .client_multi_statements: return "CLIENT_MULTI_STATEMENTS: Kann mehrere Anweisungen auf einmal verarbeiten."
            case .client_multi_results: return "CLIENT_MULTI_RESULTS: Kann mehrere Ergebnismengen verarbeiten."
            case .client_ps_multi_results: return "CLIENT_PS_MULTI_RESULTS: Kann mehrere Ergebnismengen von Prepared Statements verarbeiten."
-           case .cliet_plugin_auth: return "CLIENT_PLUGIN_AUTH: Unterstützt steckbare Authentifizierung."
+           case .client_plugin_auth: return "CLIENT_PLUGIN_AUTH: Unterstützt steckbare Authentifizierung."
            case .client_connect_attrs: return "CLIENT_CONNECT_ATTRS: Sendet Verbindungsattribute."
            case .client_plugin_auth_lenenc_client_data: return "CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA: Unterstützt längenkodierte Authentifizierungsdaten."
            case .client_can_handle_expired_passwords: return "CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS: Kann den Ablauf für abgelaufene Passwörter handhaben."

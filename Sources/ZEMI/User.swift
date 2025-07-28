@@ -7,30 +7,18 @@
 
 import Foundation
 import ZeroDB
+import ZeroMacrosClient
 
-public final class User: NSObject, Model {
-
-    @ID var id: Int?
+@GenerateQueryFunctions
+public class User: NSObject, Model {
     
-    @Text var name: String
+    @ID var id: UUID
     
-    @Text(nullable: true, maxSize: 20) var email: String = ""
-
-    public required init(from row: [String: Any]) {
-        self.id = row["id"] as? Int
-        self.name = row["name"] as? String ?? ""
-    }
-
-    init(name: String) {
-        self.name = name
-    }
-
-    public static var keyPathMap: [PartialKeyPath<User>: String] {
-        [
-            \User.id: "id",
-             \User.name: "name"
-        ]
-    }
+    @Text(name: "name", maxSize: 4) var name: String
     
+    @Text(name: "email", nullable: true, maxSize: 20) var email: String
+    
+    public func toString() -> String {
+        "User(id: \(id), name: \(name))"
+    }
 }
-

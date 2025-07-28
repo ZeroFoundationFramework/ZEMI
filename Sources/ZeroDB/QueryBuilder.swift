@@ -34,7 +34,7 @@ struct Sort{
 
 
 
-class QueryBuilder{
+public class QueryBuilder{
     private let table: String
     private var columns: [String] = ["*"]
     private var predicates: [Predicate] = []

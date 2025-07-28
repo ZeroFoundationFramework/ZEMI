@@ -1,3 +1,14 @@
+//
+//  GenerateCodingKeysMacro.swift
+//  ZEMI
+//
+//  Created by Philipp Kotte on 18.07.25.
+//
+import SwiftSyntax
+import SwiftSyntaxBuilder
+import SwiftSyntaxMacros
+import SwiftCompilerPlugin
+
 public struct GenerateCodingKeysMacro: MemberMacro {
     public static func expansion(
         of node: AttributeSyntax,

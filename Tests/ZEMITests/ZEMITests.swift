@@ -3,6 +3,13 @@ import XCTest
 
 final class ZEMITests: XCTestCase {
     func testExample() throws {
+        
+        let user = User()
+        user.name = "John Krasinski"
+        
+        
+        
+        print(user.toString())
         // XCTest Documentation
         // https://developer.apple.com/documentation/xctest
 

@@ -1,37 +1,28 @@
 import Foundation
 import CryptoKit
 
-public class MySQLClient {
-    private var socket: Int32 = -1
-    private var salt: [UInt8] = []
-    private var sequenceId: UInt8 = 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+public class MySQLClient: DBClient {
     
-    init(host: String = "127.0.0.1", port: UInt16 = 3306) {
-        socket = Darwin.socket(AF_INET, SOCK_STREAM, 0)
-        
-        var addr = sockaddr_in()
-        addr.sin_family = sa_family_t(AF_INET)
-        addr.sin_port = port.bigEndian
-        inet_pton(AF_INET, host, &addr.sin_addr)
-        
-        let result = withUnsafePointer(to: &addr) {
-            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                connect(socket, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
-            }
-        }
-        
-        guard result == 0 else {
-            perror("❌ Verbindung fehlgeschlagen")
-            return
-        }
-        
-        print("✅ Verbunden mit MySQL-Server bei \(host):\(port)")
-        readHandshakeInitPacket()
-    }
-    
-    deinit {
-        close(socket)
-    }
+    /*deinit {
+     close(self.socket)
+ }*/
     
     private func readHandshakeInitPacket() {
         var buffer = [UInt8](repeating: 0, count: 256) // Etwas mehr Puffer schadet nicht
@@ -106,46 +97,47 @@ public class MySQLClient {
             }
         }
     }
-    
-    public func login(username: String, password: String, database: String) -> MySQLClient {
-        
-        let payload = SQLClientHelper.buildPayload(username, password, salt, database: database)
-        
-        let header = SQLClientHelper.buildHeader(length: UInt32(payload.count))
-        
-        let fullPacket = header + payload
-        let sent = send(socket, fullPacket, fullPacket.count, 0)
-        if sent < 0 {
-            perror("❌ Login-Paket senden fehlgeschlagen")
-            return self
-        }
-        
-        print("📤 Login-Paket gesendet")
-        
-        var response = [UInt8](repeating: 0, count: 1024)
-        let received = recv(socket, &response, response.count, 0)
-        guard received > 0 else {
-            print("❌ Keine Antwort nach Login erhalten")
-            return self
-        }
-        
-        let firstByte = response[4]
-        switch firstByte {
-        case 0x00:
-            print("✅ Login erfolgreich")
-        case 0xFF:
-            print("❌ Login-Fehler")
-            decodeMySQLError(response)
-        default:
-            print("❓ Unbekannte Login-Antwort: \(firstByte)")
-        }
-        
-        return self
-    }
+    /*
+     public func login(username: String, password: String, database: String) -> MySQLClient {
+     
+     let payload = SQLClientHelper.buildPayload(username, password, salt, database: database)
+     
+     let header = SQLClientHelper.buildHeader(length: UInt32(payload.count))
+     
+     let fullPacket = header + payload
+     let sent = send(socket, fullPacket, fullPacket.count, 0)
+     if sent < 0 {
+     perror("❌ Login-Paket senden fehlgeschlagen")
+     return self
+     }
+     
+     print("📤 Login-Paket gesendet")
+     
+     var response = [UInt8](repeating: 0, count: 1024)
+     let received = recv(socket, &response, response.count, 0)
+     guard received > 0 else {
+     print("❌ Keine Antwort nach Login erhalten")
+     return self
+     }
+     
+     let firstByte = response[4]
+     switch firstByte {
+     case 0x00:
+     print("✅ Login erfolgreich")
+     case 0xFF:
+     print("❌ Login-Fehler")
+     decodeMySQLError(response)
+     default:
+     print("❓ Unbekannte Login-Antwort: \(firstByte)")
+     }
+     
+     return self
+     }
+     */
     
     public func login(username: String, password: String) {
         
-        let payload = SQLClientHelper.buildPayload(username, password, salt)
+        let payload: [UInt8] = []
         
         let header = SQLClientHelper.buildHeader(length: UInt32(payload.count))
         
@@ -372,7 +364,7 @@ extension MySQLClient {
         
         let payload = [0x16] + Array(sql.utf8) // COM_STMT_PREPARE
         guard sendPacket(payload: payload) else { return nil }
-
+        
         // **THE FIX IS HERE**
         // 1. Lese das Paket zuerst.
         guard let (response, _) = readPacket() else {
@@ -428,9 +420,9 @@ extension MySQLClient {
         
         let payload = buildExecutePacket(statement: statement, bindings: bindings)
         guard sendPacket(payload: payload) else { return nil }
-
+        
         // --- ANTWORT KORREKT VERARBEITEN ---
-
+        
         // 1. Das erste Paket lesen. Dies ist die Spaltenanzahl.
         guard let (columnCountPacket, _) = readPacket() else { return nil }
         
@@ -449,7 +441,7 @@ extension MySQLClient {
             print("❌ Diskrepanz bei Spaltenanzahl zwischen PREPARE und EXECUTE.")
             return nil
         }
-
+        
         // 2. Die (redundanten) Spaltendefinitionen lesen und ignorieren.
         for _ in 0..<columnCount {
             _ = readPacket()
@@ -457,7 +449,7 @@ extension MySQLClient {
         
         // 3. Das EOF-Paket nach den Spaltendefinitionen lesen.
         _ = readPacket()
-
+        
         // 4. Jetzt die eigentlichen Datenzeilen lesen.
         var allRows: [[String: Any]] = []
         while true {
@@ -465,7 +457,7 @@ extension MySQLClient {
             
             // Prüfe auf das finale EOF-Paket
             if rowPacket.first == 0xFE && rowPacket.count < 9 { break }
-
+            
             var rowOffset = 1 // Überspringe das 0x00 Paket-Präfix der Binär-Zeile
             rowOffset += Int((statement.columnCount + 7) / 8) // Überspringe die NULL-Bitmap
             
@@ -537,52 +529,6 @@ extension MySQLClient {
     }
 }
 
-// MARK: - Nützliche Erweiterungen für die Byte-Verarbeitung
-private extension Array where Element == UInt8 {
-    func toInteger<T: FixedWidthInteger>(from index: Int, length: Int) -> T {
-        return Data(self[index..<(index+length)]).withUnsafeBytes { $0.load(as: T.self) }.littleEndian
-    }
-    
-    func readLengthEncodedInteger(at offset: Int) -> (value: UInt64, length: Int)? {
-        guard offset < self.count else { return nil }
-        let firstByte = self[offset]
-        switch firstByte {
-        case 0...0xFA: return (UInt64(firstByte), 1)
-        case 0xFC: return (UInt64(self.toInteger(from: offset + 1, length: 2) as UInt16), 3)
-        case 0xFD: return (UInt64(self.toInteger(from: offset + 1, length: 3) as UInt32), 4) // Korrigiert für 3-byte
-        case 0xFE: return (self.toInteger(from: offset + 1, length: 8) as UInt64, 9)
-        default: return nil
-        }
-    }
-}
-
-private extension FixedWidthInteger {
-    var littleEndianBytes: [UInt8] {
-        withUnsafeBytes(of: self.littleEndian) { Array($0) }
-    }
-}
-
-private extension String {
-    var asLengthEncodedString: [UInt8] {
-        let data = Array(self.utf8)
-        let length = UInt64(data.count)
-        return length.littleEndianBytes.first!.asLengthEncodedInteger + data
-    }
-}
-
-private extension UInt8 {
-    var asLengthEncodedInteger: [UInt8] {
-        // Vereinfachte Version für Längen < 251
-        return [self]
-    }
-}
-
-private struct PreparedStatement {
-    let statementId: UInt32
-    let columnCount: UInt16
-    let paramCount: UInt16
-    let columnNames: [String]
-}
 
 // MARK: - Low-Level Packet I/O
 
